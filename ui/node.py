@@ -53,3 +53,7 @@ class Node:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.image['instance'].blit(self.image['x'], self.image['y'])
         self.label['instance'].draw()
+
+    def getCenter(self):
+        return dict(x = self.image['x'] + self.image['width'] / 2, y = self.image['y'] + self.image['height'] / 2)
+

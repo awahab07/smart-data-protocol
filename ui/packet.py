@@ -9,7 +9,10 @@ class Packet:
     iconWidth =  50
     iconHeight = 50
     f = 1 / 60.0 # frame rate
-    v = 10 # Velocity. Pixels / (1/60th sec)   i.e. pixels per frame to travel
+    v = 1 # Velocity. Pixels / (1/60th sec)   i.e. pixels per frame to travel
+    startTransmit = False
+    directionX = 1 # Either 1 or -1 indicating direction of animation
+    directionY = 1 # Either 1 or -1 indicating direction of animation
     
     def __init__(self, icons: List[str] = []):
         self.batch = pyglet.graphics.Batch()
@@ -21,18 +24,42 @@ class Packet:
             image.height = self.iconHeight
             self.sprites.append(pyglet.sprite.Sprite(image, x, y, batch=self.batch))
 
-    def transmit(self, fromNode: Node, toNode: Node):
-        #self.move(fromNode.image['x'], fromNode.image['y'])
-        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        print("transmit")
-        #pyglet.clock.schedule_interval(self.animate, self.f)
-        self.batch.draw()
-        pass
+        # Hiding all sprites at start
+        self.hide()
 
-    def animate(self, dt):
+    def draw(self):
+        self.batch.draw()
+
+    def hide(self):
         for s in self.sprites:
-            s.x += dt * self.v
-            s.y += dt * self.v
+            s.visible = False
+
+    def show(self):
+        for s in self.sprites:
+            s.visible = True
+
+    def transmit(self, fromNode: Node, toNode: Node):
+        if self.startTransmit == False:
+            self.startTransmit = True
+            self.directionX = 1 if toNode.image['x'] > fromNode.image['x'] else -1
+            self.directionY = 1 if toNode.image['y'] > fromNode.image['y'] else -1
+            self.move(fromNode.image['x'], fromNode.image['y'])
+            self.show()
+            pyglet.clock.schedule_interval(self.animate, self.f, fromNode, toNode)
+            pass
+
+    def animate(self, dt, fromNode: Node, toNode: Node):
+        print ("animating ... ")
+        if self.sprites[0].x >= self.directionX * toNode.image['x'] and self.sprites[0].y >= self.directionY * toNode.image['y']:
+            pyglet.clock.unschedule(self.animate)
+            self.startTransmit = False
+            self.hide()
+        else:
+            totalX = toNode.image['x'] - fromNode.image['x']
+            totalY = toNode.image['y'] - fromNode.image['y']
+            for s in self.sprites:
+                s.x += dt * self.v * totalX
+                s.y += dt * self.v * totalY
 
     def move(self, x, y):
         width, height = 0, 0
