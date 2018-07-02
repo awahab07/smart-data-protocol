@@ -35,6 +35,9 @@ connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (authorizationSe
 connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (authorizationServerNode.getCenter()['x'], gatewayNode.getCenter()['y'], authorizationServerNode.getCenter()['x'], authorizationServerNode.getCenter()['y'] + 40)))
 connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (userAccessRulesNode.getCenter()['x'], gatewayNode.getCenter()['y'], userAccessRulesNode.getCenter()['x'], userAccessRulesNode.getCenter()['y'] + 40)))
 
+# Status Label
+statusLabel = pyglet.text.Label("", font_name='Aria', font_size=12, bold=True, x = winProps['xCenter'], y = winProps['yCenter'], anchor_x='center',  anchor_y='center', multiline=True, width=winProps['width'] / 4, align='center')
+
 def update_frames(dt):
     pass
 
@@ -64,6 +67,9 @@ def on_draw():
     # Drawing user access rules component
     userAccessRulesNode.draw()
 
+    # Drawing status label
+    statusLabel.draw()
+
     # Drawing requests that will depict data transmission
     drawPackets()
 
@@ -75,8 +81,10 @@ def on_draw():
 def on_key_release(symbol, modifiers):
     if symbol == 49: # key "1"
         smartDataOwnerAuthRequest.transmit(smartDataOwnerNode, cloudNode)
+        statusLabel.text = "Sending user Authentication Request + Certificate"
     if symbol == 50: # key "1"
         userAuthToken.transmit(cloudNode, smartDataOwnerNode)
+        statusLabel.text = "User Authenticated. Sending [Auth Ticket]"
     pass
 
 def show():

@@ -49,8 +49,9 @@ class Packet:
             pass
 
     def animate(self, dt, fromNode: Node, toNode: Node):
-        print ("animating ... ")
-        if self.sprites[0].x >= self.directionX * toNode.image['x'] and self.sprites[0].y >= self.directionY * toNode.image['y']:
+        x2, y2, x1, y1 = toNode.image['x'], toNode.image['y'], self.sprites[0].x, self.sprites[0].y
+        distanceFromTarget =  pow(pow(x2 - x1, 2) + pow(y2 - y1, 2), 1 / 2)
+        if distanceFromTarget <= (self.iconWidth + self.iconHeight / 2):
             pyglet.clock.unschedule(self.animate)
             self.startTransmit = False
             self.hide()
