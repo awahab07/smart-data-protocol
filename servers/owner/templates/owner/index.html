@@ -1,0 +1,210 @@
+<!doctype html>
+
+{% load static from staticfiles %}
+
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Smart Data Protocol - Data Owner</title>
+  <meta name="description" content="SMART Data Protocol - Owner Client">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://cdn.firebase.com/libs/firebaseui/3.1.1/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.1.1/firebaseui.css" />
+
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+</head>
+
+<body>
+    <!--[if lte IE 9]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+    <![endif]-->
+
+    <!-- Add your site or application content here -->
+    <h4 style="text-align: center;">Data Owner</h4>
+    <hr>
+    <div id="firebaseui-auth-container"></div>
+    <div id="image-upload-container" class="container-fluid" style="padding: 0; display: none;text-align: center;">
+      <div class="row"></div>
+        <div class="col-xs-12">
+            <div class="input-group text-center">
+                <label class="input-group">
+                    <input id="fileInput" type="file">
+                </label>
+              </div>
+        
+              <div class="input-group text-center">
+                <span class="btn btn-primary" id="uploadButton">
+                    Upload <i class="glyphicon glyphicon-cloud-upload"></i>
+                </span>
+              </div>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="company-about-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="modalTitle">Company Name</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage">Company summary...</p>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.3.1.min.js"><\/script>')</script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="{% static "core.js" %}"></script>
+    <script type="text/javascript" src="{% static "owner.js" %}"></script>
+
+
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyDDNRUHGzlAayhvaPB_ZFj_5yd7k-jqfQ0",
+        authDomain: "smart-data-protocol.firebaseapp.com",
+        databaseURL: "https://smart-data-protocol.firebaseio.com",
+        projectId: "smart-data-protocol",
+        storageBucket: "smart-data-protocol.appspot.com",
+        messagingSenderId: "943714516583"
+      };
+      firebase.initializeApp(config);
+
+      // Fire Login UI Config
+      var uiConfig = {
+        signInSuccessUrl: '/owner',
+        signInOptions: [
+          // Leave the lines as is for the providers you want to offer your users.
+          firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+          firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+          firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+          firebase.auth.GithubAuthProvider.PROVIDER_ID,
+          firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          firebase.auth.PhoneAuthProvider.PROVIDER_ID
+        ],
+        // Terms of service url.
+        tosUrl: '<your-tos-url>'
+      };
+
+      // Initialize the FirebaseUI Widget using Firebase.
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+    
+      // The start method will wait until the DOM is loaded.
+      if (!ui.isPendingRedirect()) {
+        ui.start('#firebaseui-auth-container', uiConfig);
+      } else {
+        (function($) {
+          var imageContainer$ = $('#image-upload-container');
+          var uploadButton$ = $('#uploadButton');
+          var fileInput$ = $('#fileInput');
+          
+          imageContainer$.show();
+          
+          uploadButton$.on("click", function() {
+            var file = fileInput$.get(0).files[0];
+            if(!file) {
+              alert("Please select image first");
+              return;
+            }
+            
+            // Uploading file
+            var fileNameWithoutExt = file.name.replace(/\s\.[^/.]+$/, "");
+            var recordKey = fileNameWithoutExt.replace(/\W/g, '');
+            var storageRef = firebase.storage().ref();
+            var pathReference = storageRef.child('images/' + fileNameWithoutExt);
+            pathReference.put(file).then(function(snapshot) {
+              // Create record in database
+                snapshot.ref.getDownloadURL().then(function(downloadURL){
+                  try {
+                    firebase.database().ref('images').child(recordKey).set({
+                      fileName: file.name,
+                      key: recordKey,
+                      url: downloadURL,
+                      accessed: false,
+                      allowRead: false,
+                      allowDelete: false
+                    });
+
+                    alert("File Uploaded");
+                    fileInput$.replaceWith(fileInput$ = fileInput$.clone(true));
+                  } catch(error) {
+                    alert("Error registering record in cloud. " + (error.message || JSON.stringify(error)));
+                  }
+              }, function(error) {
+                alert("Error registering record in cloud. " + (error.message || JSON.stringify(error)));
+              });
+            }, function(error){
+                alert("Error uploading file. " + (error.message || JSON.stringify(error)));
+            });
+          });
+
+            // File Input - Attaching behavior
+            $(document).on('change', ':file', function() {
+              var input = $(this),
+                numFiles = input.get(0).files ? input.get(0).files.length : 1,
+                label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                input.trigger('fileselect', [numFiles, label]);
+            });
+            
+            // Listening for data changes
+            var accessedRecords = null, allRecords = {};
+            var imagesRef = firebase.database().ref("images/");
+            imagesRef.on('value', function(snapshot) {
+              const imageObjs = snapshot.val();
+              
+              if(imageObjs) {
+                // To detected newly accessed records
+                if(accessedRecords) {
+                  Object.keys(imageObjs).map(key => {
+                    if(imageObjs[key].accessed && !accessedRecords[key]) {
+                      accessedRecords[key] = true;
+                      showMessage(`Image <b>${imageObjs[key].fileName}</b> accessed by a third party user.`, 'Notification');
+                    }
+                  });
+                } else {
+                  accessedRecords = {};
+                  Object.keys(imageObjs).map(key => {
+                    accessedRecords[key] = imageObjs[key].accessed;
+                  });
+                }
+              }
+
+              // To detect newly deleted records
+                const loadImages = imageObjs || {};
+                if(allRecords) {
+                  Object.keys(allRecords).map(key => {
+                      if(!loadImages[key]) {
+                        showMessage(`Image <b>${allRecords[key]}</b> deleted by a third party user.`, 'Notification');
+                        delete allRecords[key];
+                      }
+                  });
+                } 
+                
+                Object.keys(loadImages).map(key => {
+                  allRecords[key] = loadImages[key].fileName;
+                });
+            });
+
+            function showMessage(message, title) {
+              $('#modalTitle').html(title);
+              $('#modalMessage').html(message)
+              $('#modal').modal('show');
+            }
+            window.showMessage = showMessage; // For debugging
+        })(jQuery);
+      }
+    </script>
+</body>
+
+</html>

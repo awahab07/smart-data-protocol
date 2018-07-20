@@ -57,3 +57,9 @@ class Node:
     def getCenter(self):
         return dict(x = self.image['x'] + self.image['width'] / 2, y = self.image['y'] + self.image['height'] / 2)
 
+    def blink(self):
+        # Initializing connecting lines
+        highlightBatch = pyglet.graphics.Batch()
+        highlightBatch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (self.image['x'], self.image['y'], self.image['x'] + self.image['width'], self.image['y'] + self.image['height'])))
+        highlightBatch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (self.image['x'] + self.image['width'], self.image['y'], self.image['x'] + self.image['width'], self.image['y'] + self.image['height'])))
+

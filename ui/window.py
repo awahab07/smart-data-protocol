@@ -4,6 +4,7 @@ from pyglet.gl import *
 
 from .node import Node
 from .packets import *
+from cefpython3 import cefpython as cef
 
 winProps = {
     'title': "Smart Data - Access Control",
@@ -39,6 +40,7 @@ connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (userAccessRules
 statusLabel = pyglet.text.Label("", font_name='Aria', font_size=12, bold=True, x = winProps['xCenter'], y = winProps['yCenter'], anchor_x='center',  anchor_y='center', multiline=True, width=winProps['width'] / 4, align='center')
 
 def update_frames(dt):
+    userAuthToken.transmit(cloudNode, smartDataOwnerNode)
     pass
 
 @window.event
@@ -82,10 +84,20 @@ def on_key_release(symbol, modifiers):
     if symbol == 49: # key "1"
         smartDataOwnerAuthRequest.transmit(smartDataOwnerNode, cloudNode)
         statusLabel.text = "Sending user Authentication Request + Certificate"
-    if symbol == 50: # key "1"
+    if symbol == 50: # key "2"
         userAuthToken.transmit(cloudNode, smartDataOwnerNode)
         statusLabel.text = "User Authenticated. Sending [Auth Ticket]"
     pass
 
 def show():
     window.set_visible()
+
+def position(x, y):
+    window.set_location(x, y)
+
+def getSize():
+    return [winProps['width'], winProps['height']]
+
+def log(msg):
+    statusLabel.text = "Message Received"
+
