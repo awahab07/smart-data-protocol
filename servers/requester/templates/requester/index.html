@@ -1,0 +1,188 @@
+<!doctype html>
+
+{% load static from staticfiles %}
+
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Data Requester</title>
+  <meta name="description" content="SMART Data Protocol - Owner Client">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <script src="https://cdn.firebase.com/libs/firebaseui/3.1.1/firebaseui.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.1.1/firebaseui.css" />
+
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+</head>
+
+<body>
+    <!--[if lte IE 9]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+    <![endif]-->
+
+    <!-- Add your site or application content here -->
+    <h4 style="text-align: center;">Requester</h4>
+    <h3 id="userName"></h3>
+    <hr>
+    <div id="firebaseui-auth-container"></div>
+    <div id="image-view-container" class="container-fluid" style="display: none;">
+      <div class="row">
+        <div class="col-xs-12">
+            <table class="table table-bordered table-striped table-hover">
+              <tbody id="image-view-table" class="text-center">
+              </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="company-about-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="modalTitle">Company Name</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage">Company summary...</p>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.3.1.min.js"><\/script>')</script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="{% static "core.js" %}"></script>
+    <script type="text/javascript" src="{% static "requester.js" %}"></script>
+
+
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyDDNRUHGzlAayhvaPB_ZFj_5yd7k-jqfQ0",
+        authDomain: "smart-data-protocol.firebaseapp.com",
+        databaseURL: "https://smart-data-protocol.firebaseio.com",
+        projectId: "smart-data-protocol",
+        storageBucket: "smart-data-protocol.appspot.com",
+        messagingSenderId: "943714516583"
+      };
+      firebase.initializeApp(config);
+
+      // Fire Login UI Config
+      var uiConfig = {
+        signInSuccessUrl: '/owner',
+        signInOptions: [
+          // Leave the lines as is for the providers you want to offer your users.
+          firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+          firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+          firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+          firebase.auth.GithubAuthProvider.PROVIDER_ID,
+          firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          firebase.auth.PhoneAuthProvider.PROVIDER_ID
+        ],
+        // Terms of service url.
+        tosUrl: '<your-tos-url>'
+      };
+      
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          alert(JSON.stringify(user));
+          // User is signed in.
+          var displayName = user.displayName;
+          var email = user.email;
+          var emailVerified = user.emailVerified;
+          var photoURL = user.photoURL;
+          var isAnonymous = user.isAnonymous;
+          var uid = user.uid;
+          var providerData = user.providerData;
+          jQuery('#userName').text(displayName);
+          // ...
+        } else {
+          jQuery('#userName').text("");
+        }
+      });
+
+      // Initialize the FirebaseUI Widget using Firebase.
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+      // The start method will wait until the DOM is loaded.
+      if (!ui.isPendingRedirect()) {
+        ui.start('#firebaseui-auth-container', uiConfig);
+      } else {
+        (function($) {
+          var imageContainer$ = $('#image-view-container');
+          var imageViewTable$ = $('#image-view-table');
+          
+          imageContainer$.show();
+
+          // Fetching and displaying list of data
+          var imagesRef = firebase.database().ref("images/");
+          imagesRef.on('value', function(snapshot) {
+            const imageObjs = snapshot.val();
+            imageViewTable$.empty();
+            if(imageObjs) {
+              Object.keys(imageObjs).map(key => {
+                var row$ = $('<tr><td align="left">' + imageObjs[key]['fileName'] + '</td></tr>');
+
+                // View Button
+                var viewButton$ =$('<button class="btn btn-primary"><i class="glyphicon glyphicon-eye-open"></i></button>');
+                viewButton$.data('record', imageObjs[key]);
+                viewButton$.on('click', function() {
+                    var record = $(this).data('record');
+                    if(!record.allowRead) {
+                      showMessage("Permission denied!", "Authorization Error");
+                    } else {
+                        // Updated accessed status
+                        record.accessed = true;
+                        imagesRef.child(record.key).set(record);
+
+                        // Fetch record from cloud and show
+                        window.open(record.url, record.fileName);
+                    }
+                });
+                row$.append($('<td></td>').append(viewButton$));
+                
+                // Delete Button
+                var deleteButton$ =$('<button class="btn btn-danger"><i class="glyphicon glyphicon-remove"></i></button>');
+                deleteButton$.data('record', imageObjs[key]);
+                deleteButton$.on('click', function() {
+                    var record = $(this).data('record');
+                    if(!record.allowDelete) {
+                      showMessage("Permission denied!", "Authorization Error");
+                    } else {
+                        // Delete record from cloud
+                        try {
+                          imagesRef.child(record.key).set(null);
+                          //alert("Record Deleted");
+                        } catch (e) {
+                          alert("Error deleting record" + e.message || JSON.stringify(e));
+                        }
+                    }
+                });
+                row$.append($('<td></td>').append(deleteButton$));
+
+                imageViewTable$.append(row$);
+              });
+            }
+          });
+
+          function showMessage(message, title) {
+              $('#modalTitle').html(title);
+              $('#modalMessage').html(message)
+              $('#modal').modal('show');
+            }
+            window.showMessage = showMessage; // For debugging
+        })(jQuery);
+      }
+    </script>
+</body>
+
+</html>

@@ -40,7 +40,6 @@ connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (userAccessRules
 statusLabel = pyglet.text.Label("", font_name='Aria', font_size=12, bold=True, x = winProps['xCenter'], y = winProps['yCenter'], anchor_x='center',  anchor_y='center', multiline=True, width=winProps['width'] / 4, align='center')
 
 def update_frames(dt):
-    userAuthToken.transmit(cloudNode, smartDataOwnerNode)
     pass
 
 @window.event
