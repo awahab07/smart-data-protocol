@@ -6,6 +6,11 @@ from .node import Node
 from .packets import *
 from cefpython3 import cefpython as cef
 
+import threading
+import firebase_admin
+from firebase_admin import credentials, db
+
+
 winProps = {
     'title': "Smart Data - Access Control",
     'width': 900,
@@ -24,6 +29,7 @@ window = pyglet.window.Window(winProps['width'], winProps['height'], winProps['t
 smartDataOwnerNode = Node('monitor.png', winProps['imageSize'], winProps['padding'], winProps['yCenter'], "Smart Data Owner")
 requesterNode = Node('monitor.png', winProps['imageSize'], winProps['xCenter'] - winProps['imageSize'] / 2, winProps['height'] - winProps['padding'] - winProps['imageSize'], "Smart Data Requester")
 cloudNode = Node('cloud.png', winProps['imageSize'], winProps['width'] - winProps['padding'] - winProps['imageSize'], winProps['yCenter'], "Cloud")
+centerNode = Node('center.png', winProps['imageSize'], winProps['xCenter'], winProps['yCenter'], "Center Node")
 
 # Initializing gateway node and associated authorization and access rule nodes
 gatewayNode = Node('gateway.png', winProps['imageSize'], winProps['xCenter'] - winProps['imageSize'] / 2, 2 * winProps['padding'] + winProps['imageSize'], "Gateway")
@@ -39,7 +45,31 @@ connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (userAccessRules
 # Status Label
 statusLabel = pyglet.text.Label("", font_name='Aria', font_size=12, bold=True, x = winProps['xCenter'], y = winProps['yCenter'], anchor_x='center',  anchor_y='center', multiline=True, width=winProps['width'] / 4, align='center')
 
+# Firebase initilization
+cred = credentials.Certificate("firebase-adminsdk.json")
+firebase_app = firebase_admin.initialize_app(cred, {'databaseURL': 'https://smart-data-protocol.firebaseio.com'})
+firebase_logs = db.reference('notifications', firebase_app)
+firebase_messages_cache = list()
+
+# Start thread for Firebase listening
+def update_messages():
+    while True:
+        notifications = firebase_logs.get()
+        if(isinstance(notifications, list)):
+            for notification in notifications:
+                firebase_messages_cache.insert(0, notification)
+                pass
+            firebase_logs.delete()
+
+firebase_thread = threading.Thread(name="FirebaseThread", target=update_messages)
+firebase_thread.start()
+
 def update_frames(dt):
+    if(len(firebase_messages_cache)):
+        notification = firebase_messages_cache.pop() # dispatch from left of collection
+        log(notification['Message'])
+        transmit(notification['Action'])
+        print(notification)
     pass
 
 @window.event
@@ -75,8 +105,7 @@ def on_draw():
     drawPackets()
 
     # Calling update frames every 60th of a second (Effectually creating a 60 fps).
-    pyglet.clock.schedule_interval(update_frames, winProps['fps'])
-
+    pyglet.clock.schedule_interval(update_frames, 1)
 
 @window.event
 def on_key_release(symbol, modifiers):
@@ -98,5 +127,11 @@ def getSize():
     return [winProps['width'], winProps['height']]
 
 def log(msg):
-    statusLabel.text = "Message Received"
+    statusLabel.text = msg
+
+def transmit(action):
+    if(action in protocolPackets):
+        protocolPackets[action]['packet'].transmit(globals()[protocolPackets[action]['from']], globals()[protocolPackets[action]['to']])
+        print(str(protocolPackets[action]))
+
 

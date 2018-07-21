@@ -64,18 +64,8 @@
 
 
     <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script type="text/javascript" src="{% static "firebase_init.js" %}"></script>
     <script>
-      // Initialize Firebase
-      var config = {
-        apiKey: "AIzaSyDDNRUHGzlAayhvaPB_ZFj_5yd7k-jqfQ0",
-        authDomain: "smart-data-protocol.firebaseapp.com",
-        databaseURL: "https://smart-data-protocol.firebaseio.com",
-        projectId: "smart-data-protocol",
-        storageBucket: "smart-data-protocol.appspot.com",
-        messagingSenderId: "943714516583"
-      };
-      firebase.initializeApp(config);
-
       // Fire Login UI Config
       var uiConfig = {
         signInSuccessUrl: '/owner',
@@ -91,7 +81,27 @@
         // Terms of service url.
         tosUrl: '<your-tos-url>'
       };
-      
+
+      var notificationQueue = [];
+      var sendNotification = function() {
+        if(notificationQueue.length) {
+            let Action = notificationQueue.pop();
+            var notRef = firebase.database().ref("notifications");
+            notRef.once("value", v => {
+                const message = {Action, Message: GATEWAY_MESSAGES[Action]};
+                notRef.set((Array.isArray(v.val()) && v.val() || []).concat([message]));
+                console.log("Message Sent", message);
+            });
+        }
+      }
+      setInterval(sendNotification, 800);
+
+      var fireMessage = function(Action) {
+        notificationQueue.unshift(Action);
+      }
+
+      fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_INITIALIZING);
+
       firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
           alert(JSON.stringify(user));
@@ -106,7 +116,7 @@
           jQuery('#userName').text(displayName);
           // ...
         } else {
-          jQuery('#userName').text("");
+          //jQuery('#userName').text("");
         }
       });
 
@@ -116,15 +126,23 @@
       // The start method will wait until the DOM is loaded.
       if (!ui.isPendingRedirect()) {
         ui.start('#firebaseui-auth-container', uiConfig);
+        setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_AUTH_REQUEST), 500);
       } else {
+        setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_AUTHENTICATED), 2000);
+
         (function($) {
           var imageContainer$ = $('#image-view-container');
           var imageViewTable$ = $('#image-view-table');
           
           imageContainer$.show();
 
+          setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_WHETHER_AUTHORIZED), 3000);
+
           // Fetching and displaying list of data
           var imagesRef = firebase.database().ref("images/");
+
+          setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_IS_AUTHORIZED), 4000);
+
           imagesRef.on('value', function(snapshot) {
             const imageObjs = snapshot.val();
             imageViewTable$.empty();
@@ -133,20 +151,26 @@
                 var row$ = $('<tr><td align="left">' + imageObjs[key]['fileName'] + '</td></tr>');
 
                 // View Button
-                var viewButton$ =$('<button class="btn btn-primary"><i class="glyphicon glyphicon-eye-open"></i></button>');
+                var viewButton$ = $('<button class="btn btn-primary"><i class="glyphicon glyphicon-eye-open"></i></button>');
                 viewButton$.data('record', imageObjs[key]);
                 viewButton$.on('click', function() {
-                    var record = $(this).data('record');
-                    if(!record.allowRead) {
-                      showMessage("Permission denied!", "Authorization Error");
-                    } else {
-                        // Updated accessed status
-                        record.accessed = true;
-                        imagesRef.child(record.key).set(record);
+                    fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_ACCESS);
+                    let record = $(this).data('record');
+                    setTimeout(() => {
+                        if(!record.allowRead) {
+                          showMessage("Permission denied!", "Authorization Error");
+                          fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_ACCESS_DENIED)
+                        } else {
+                            // Updated accessed status
+                            record.accessed = true;
+                            imagesRef.child(record.key).set(record);
 
-                        // Fetch record from cloud and show
-                        window.open(record.url, record.fileName);
-                    }
+                            // Fetch record from cloud and show
+                            window.open(record.url, record.fileName);
+
+                            fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_ACCESS_GRANTED);
+                        }
+                    }, 1000);
                 });
                 row$.append($('<td></td>').append(viewButton$));
                 
@@ -154,23 +178,30 @@
                 var deleteButton$ =$('<button class="btn btn-danger"><i class="glyphicon glyphicon-remove"></i></button>');
                 deleteButton$.data('record', imageObjs[key]);
                 deleteButton$.on('click', function() {
-                    var record = $(this).data('record');
-                    if(!record.allowDelete) {
-                      showMessage("Permission denied!", "Authorization Error");
-                    } else {
-                        // Delete record from cloud
-                        try {
-                          imagesRef.child(record.key).set(null);
-                          //alert("Record Deleted");
-                        } catch (e) {
-                          alert("Error deleting record" + e.message || JSON.stringify(e));
+                    fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_CHANGE_REQUEST);
+                    let record = $(this).data('record');
+                    setTimeout(() => {
+                        if(!record.allowDelete) {
+                          showMessage("Permission denied!", "Authorization Error");
+                          fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_CHANGE_REQUEST_DENIED);
+                        } else {
+                            // Delete record from cloud
+                            try {
+                              imagesRef.child(record.key).set(null);
+                              //alert("Record Deleted");
+                            } catch (e) {
+                              alert("Error deleting record" + e.message || JSON.stringify(e));
+                            }
+                            fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_CHANGE_REQUEST_GRANTED);
                         }
-                    }
+                    }, 1000);
                 });
                 row$.append($('<td></td>').append(deleteButton$));
 
                 imageViewTable$.append(row$);
               });
+            } else {
+               imageViewTable$.append("<h6>- No Data -</h6>")
             }
           });
 

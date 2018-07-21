@@ -69,18 +69,8 @@
 
 
     <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script type="text/javascript" src="{% static "firebase_init.js" %}"></script>
     <script>
-      // Initialize Firebase
-      var config = {
-        apiKey: "AIzaSyDDNRUHGzlAayhvaPB_ZFj_5yd7k-jqfQ0",
-        authDomain: "smart-data-protocol.firebaseapp.com",
-        databaseURL: "https://smart-data-protocol.firebaseio.com",
-        projectId: "smart-data-protocol",
-        storageBucket: "smart-data-protocol.appspot.com",
-        messagingSenderId: "943714516583"
-      };
-      firebase.initializeApp(config);
-
       // Fire Login UI Config
       var uiConfig = {
         signInSuccessUrl: '/owner',
@@ -97,13 +87,26 @@
         tosUrl: '<your-tos-url>'
       };
 
+      var fireMessage = function(Action) {
+        var notRef = firebase.database().ref("notifications");
+        notRef.once("value", v => {
+            const message = {Action, Message: GATEWAY_MESSAGES[Action]};
+            notRef.set((Array.isArray(v.val()) && v.val() || []).concat([message]));
+            console.log("Message Sent", message);
+        });
+      }
+
+      fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_INITIALIZING);
+
       // Initialize the FirebaseUI Widget using Firebase.
       var ui = new firebaseui.auth.AuthUI(firebase.auth());
     
       // The start method will wait until the DOM is loaded.
       if (!ui.isPendingRedirect()) {
         ui.start('#firebaseui-auth-container', uiConfig);
+        setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_AUTH_REQUEST), 1000);
       } else {
+        setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_AUTHENTICATED), 2000);
         (function($) {
           var imageContainer$ = $('#image-upload-container');
           var uploadButton$ = $('#uploadButton');
@@ -114,7 +117,7 @@
           uploadButton$.on("click", function() {
             var file = fileInput$.get(0).files[0];
             if(!file) {
-              alert("Please select image first");
+              showMessage("Please select image first", "Input Required");
               return;
             }
             
@@ -136,16 +139,17 @@
                       allowDelete: false
                     });
 
-                    alert("File Uploaded");
+                    showMessage("File Uploaded to Cloud", "Success");
+                    fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_FILE_UPLOAD);
                     fileInput$.replaceWith(fileInput$ = fileInput$.clone(true));
                   } catch(error) {
-                    alert("Error registering record in cloud. " + (error.message || JSON.stringify(error)));
+                    showMessage("Error registering record in cloud. " + (error.message || JSON.stringify(error)), "Cloud DB Error");
                   }
               }, function(error) {
-                alert("Error registering record in cloud. " + (error.message || JSON.stringify(error)));
+                showMessage("Error registering record in cloud. " + (error.message || JSON.stringify(error)), "Cloud DB Error");
               });
             }, function(error){
-                alert("Error uploading file. " + (error.message || JSON.stringify(error)));
+                showMessage("Error uploading file. " + (error.message || JSON.stringify(error)), "Cloud DB Error");
             });
           });
 
@@ -170,6 +174,7 @@
                     if(imageObjs[key].accessed && !accessedRecords[key]) {
                       accessedRecords[key] = true;
                       showMessage(`Image <b>${imageObjs[key].fileName}</b> accessed by a third party user.`, 'Notification');
+                      fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_NOTIFIED);
                     }
                   });
                 } else {
@@ -187,6 +192,7 @@
                       if(!loadImages[key]) {
                         showMessage(`Image <b>${allRecords[key]}</b> deleted by a third party user.`, 'Notification');
                         delete allRecords[key];
+                        fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_NOTIFIED);
                       }
                   });
                 } 
