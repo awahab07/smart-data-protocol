@@ -170,7 +170,7 @@
 
                             fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_ACCESS_GRANTED);
                         }
-                    }, 1000);
+                    }, 100);
                 });
                 row$.append($('<td></td>').append(viewButton$));
                 
@@ -194,7 +194,7 @@
                             }
                             fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_RESOURCE_CHANGE_REQUEST_GRANTED);
                         }
-                    }, 1000);
+                    }, 100);
                 });
                 row$.append($('<td></td>').append(deleteButton$));
 

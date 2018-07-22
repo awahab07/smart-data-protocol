@@ -1,4 +1,5 @@
 import sys
+import time
 import pyglet
 from pyglet.gl import *
 
@@ -7,6 +8,7 @@ from .packets import *
 from cefpython3 import cefpython as cef
 
 import threading
+import asyncio
 import firebase_admin
 from firebase_admin import credentials, db
 
@@ -55,11 +57,16 @@ firebase_messages_cache = list()
 def update_messages():
     while True:
         notifications = firebase_logs.get()
+
         if(isinstance(notifications, list)):
+            if(len(notifications)):
+                firebase_logs.delete()
+
             for notification in notifications:
+                time.sleep(0.5)
                 firebase_messages_cache.insert(0, notification)
-                pass
-            firebase_logs.delete()
+
+
 
 firebase_thread = threading.Thread(name="FirebaseThread", target=update_messages)
 firebase_thread.start()

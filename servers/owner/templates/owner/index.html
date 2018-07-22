@@ -141,7 +141,7 @@
 
                     showMessage("File Uploaded to Cloud", "Success");
                     fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_FILE_UPLOAD);
-                    fileInput$.replaceWith(fileInput$ = fileInput$.clone(true));
+                    fileInput$.val(null);
                   } catch(error) {
                     showMessage("Error registering record in cloud. " + (error.message || JSON.stringify(error)), "Cloud DB Error");
                   }
