@@ -3,3 +3,6 @@ __pycache__
 .vscode
 .idea
 firebase-adminsdk.json
+
+# ignoring generated certificates
+servers/cert_store/*

@@ -20,5 +20,6 @@ urlpatterns = [
     path('owner/', include('owner.urls')),
     path('requester/', include('requester.urls')),
     path('gateway/', include('gatewayapp.urls')),
+    path('CA/', include('CA.urls')),
     path('admin/', admin.site.urls),
 ]
