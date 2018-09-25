@@ -6,6 +6,6 @@ def index(request):
     context = None
     return render(request, 'owner/index.html', context)
 
-def start(request):
+def resource(request, uid, resourceId):
     context = None
-    return render(request, 'owner/start.html', context)
+    return render(request, 'CA/index.html', context)

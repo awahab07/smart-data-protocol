@@ -53,7 +53,8 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             './servers/owner/templates',
-            './servers/requester/templates'
+            './servers/requester/templates',
+            './servers/CA/templates'
         ],
         'APP_DIRS': True,
         'OPTIONS': {
