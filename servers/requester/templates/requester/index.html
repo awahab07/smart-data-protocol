@@ -27,12 +27,12 @@
     <div class="container-fluid">
         <div class="row">
             <h4 class="col-xs-12" style="text-align: center;">Requester</h4>
-            <div class="col-xs-9 text-left">
-                <img id="avatar" src="" width="100">
+            <div class="col-xs-9 text-left requester-info-container">
+                <img id="avatar" src="http://robcrocombe.files.wordpress.com/2014/03/spinner1.gif" width="100">
                 <input type="text" id="uidInput" style="height: 1px;width:100px; display:block;">
                 <h6 id="userName"></h6>
             </div>
-            <div class="col-xs-3 text-right" style="display: flex; align-items: center; justify-content: flex-end; height: 100px;">
+            <div class="col-xs-3 text-right requester-info-container" style="display: flex; align-items: center; justify-content: flex-end; height: 100px;">
                 <img title="Copy User's Key" id="copyToClipBoard" style="display:none;" onclick="copyUidToClipBoard()" width="30" src="http://downloadicons.net/sites/default/files/copy-icon-38147.png">
             </div>
         </div>
@@ -71,12 +71,12 @@
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.3.1.min.js"><\/script>')</script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
-    <script type="text/javascript" src="{% static "core.js" %}"></script>
-    <script type="text/javascript" src="{% static "requester.js" %}"></script>
+    <script type="text/javascript" src="{% static 'core.js' %}"></script>
+    <script type="text/javascript" src="{% static 'requester.js' %}"></script>
 
 
     <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
-    <script type="text/javascript" src="{% static "firebase_init.js" %}"></script>
+    <script type="text/javascript" src="{% static 'firebase_init.js' %}"></script>
     <script>
       // Fire Login UI Config
       var uiConfig = {
@@ -142,6 +142,10 @@
       if (!ui.isPendingRedirect()) {
         ui.start('#firebaseui-auth-container', uiConfig);
         setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_AUTH_REQUEST), 500);
+
+        (function($){
+            $('.requester-info-container').hide();
+        })(jQuery);
       } else {
         setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_AUTHENTICATED), 2000);
 
@@ -152,6 +156,7 @@
           var imageViewTable$ = $('#image-view-table');
           
           imageContainer$.show();
+          $('.requester-info-container').show();
 
           setTimeout(() => fireMessage(GATEWAY_MESSAGES_KEYS.REQUESTER_WHETHER_AUTHORIZED), 3000);
 

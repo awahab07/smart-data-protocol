@@ -10,6 +10,8 @@ from OpenSSL import crypto
 from .certgen import createKeyPair, createCertRequest, createCertificate
 from .validate_cert import verify_certificate_chain
 
+CertificateError = crypto.X509StoreContextError
+
 store_path = os.path.join((Path(os.path.dirname(__file__)).parent.parent), 'cert_store')
 # Create Store Dir if not created
 if not os.path.exists(store_path):
@@ -100,6 +102,11 @@ def create_resource_cert(valid_after_sec, valid_for_sec, user_name, user_id, res
         leafcert.write(
             crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8')
         )
+
+def ca_cert_exists():
+    if (not os.path.exists(os.path.join(store_path, 'CA.cert'))):
+        raise FileNotFoundError()
+    return True
 
 def verify_requester_cert(user_id):
     cert_path = os.path.join(store_path, '%s.cert') % (user_id)

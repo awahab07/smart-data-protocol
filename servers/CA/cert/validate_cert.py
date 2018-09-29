@@ -29,5 +29,6 @@ def verify_certificate_chain(cert_path, trusted_certs):
 
     except Exception as e:
         print(e)
-        return False
+        #return False
+        return e
 
