@@ -1,4 +1,7 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+
+from .cloud import cloud
 
 from .cert import cert
 
@@ -17,17 +20,22 @@ def resource(request, uid, resourceId):
     except FileNotFoundError:
         return respondWithCertificateError(request, 'Certificate Error', 'Requester certificate could not be found.')
     except cert.CertificateError as ce:
-        return respondWithCertificateError(request, 'Requester Certificate', ce[2])
+        return respondWithCertificateError(request, 'Requester Certificate', str(ce))
 
     try:
         cert.verify_resource_cert(uid, resourceId)
     except FileNotFoundError:
-        return respondWithCertificateError(request, 'Certificate Error', 'Resource certificate for this requester could not be found.')
+        cloud.insert_resource_certificate_request(uid, resourceId)
+        return respondWithCertificateError(request, 'Certificate Error', 'Resource certificate for this requester could not be found.' + ' Owner of the resource will be requested for permission.')
     except cert.CertificateError as ce:
-        return respondWithCertificateError(request, 'Resource Access', ce[2])
+        cloud.insert_resource_certificate_request(uid, resourceId)
+        return respondWithCertificateError(request, 'Resource Access', str(ce) + ' Owner of the resource will be requested for permission.')
 
-    context = {'title': "Title", 'message': "Message"}
-    return render(request, 'CA/error.html', context)
+    cloud.fire_message('REQUESTER_RESOURCE_ACCESS_GRANTED', "Certificate validation - Success")
+    cloud.mark_resource_accessed(resourceId)
+
+    return render(request, 'CA/resource.html', {'resourceUrl': cloud.get_resource_url(resourceId)})
 
 def respondWithCertificateError(request, title, message):
+    cloud.fire_message('REQUESTER_RESOURCE_ACCESS_DENIED', "Certificate validation - FAILED")
     return render(request, 'CA/error.html', {'title': title, 'message': message})

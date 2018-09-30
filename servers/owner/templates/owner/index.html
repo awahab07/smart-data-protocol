@@ -44,6 +44,8 @@
         </div>
     </div>
     
+    {% csrf_token %}
+
     <!-- Modal -->
     <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="company-about-label" aria-hidden="true">
         <div class="modal-dialog">
@@ -59,10 +61,52 @@
         </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
 
+    <!-- Prompt Modal -->
+    <div class="modal fade" id="modalPrompt" tabindex="-1" role="dialog" aria-labelledby="company-about-label" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <!-- <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
+                  <h4 class="modal-title" id="modalPromptTitle">Requester Access Certificate</h4>
+              </div>
+              <div class="modal-body" style="position: relative;">
+                  <div id="promptModalLoader" style="display: none; position: absolute; left: 0px; top: 0px; width: 100%; height: 100%">
+                    <img src="http://robcrocombe.files.wordpress.com/2014/03/spinner1.gif" width="100%" height="100%">
+                  </div>
+                  <p id="modalPromptMessage">Company summary...</p>
+                  <div class="form-group text-center">
+                    <label for="validAfterInputId" class="form-label text-right" style="width: 150px;">Valid After (seconds)</label>
+                    <input type="text" class="input" id="validAfterInputId" placeholder="Leave 0 for immediate availability.">
+                  </div>
+
+                  <div class="form-group text-center">
+                      <label for="validForInputId" class="form-label text-right" style="width: 150px;">Valid For (seconds)</label>
+                      <input type="text" class="input" id="validForInputId" placeholder="Certificate expiry (in seconds).">
+                      <br>
+                      <small class="text-right" id="promptModalSecondsInterpret"></small>
+                    </div>
+              </div>
+              <div class="modal-footer">
+                <div class="row">
+                  <div class="col-xs-12">
+                    <div class="form-group">
+                      <button class="btn btn-secondary" id="modalPromptCancelBtn" data-dismiss="modal">Cancel</button>
+                      <button class="btn btn-primary" id="modalPromptGenerateBtn">Generate</button>
+                    </form>
+                  </div>
+                </div>
+            </div>
+          </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.3.1.min.js"><\/script>')</script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/2.2.2/moment-duration-format.min.js"></script>
 
     <script type="text/javascript" src="{% static "core.js" %}"></script>
     <script type="text/javascript" src="{% static "owner.js" %}"></script>
@@ -162,16 +206,17 @@
             });
             
             // Listening for data changes
-            var accessedRecords = null, allRecords = {};
+            var accessedRecords = null, allRecords = {},  newAccessRequests = {};
             var imagesRef = firebase.database().ref("images/");
             imagesRef.on('value', function(snapshot) {
               const imageObjs = snapshot.val();
               
-              if(imageObjs) {
+              if (imageObjs) {
                 // To detected newly accessed records
-                if(accessedRecords) {
+                if (accessedRecords) {
                   Object.keys(imageObjs).map(key => {
-                    if(imageObjs[key].accessed && !accessedRecords[key]) {
+                    const imageObj = imageObjs[key];
+                    if (imageObj.accessed && !accessedRecords[key]) {
                       accessedRecords[key] = true;
                       showMessage(`Image <b>${imageObjs[key].fileName}</b> accessed by a third party user.`, 'Notification');
                       fireMessage(GATEWAY_MESSAGES_KEYS.OWNER_NOTIFIED);
@@ -184,6 +229,26 @@
                   });
                 }
               }
+
+                if(newAccessRequests) {
+                  Object.keys(imageObjs).map(key => {
+                    const imageObj = imageObjs[key];
+                    
+                    // Check if there are new access requests
+                    // Each new access request should trigger a resource certificate generation process for a particular requester-resource
+                    if(imageObj.requests && imageObj.requests.length) {
+                      imageObj.requests.map(request => {
+                        const {userId, resourceId} = request;
+                          if(!newAccessRequests[userId] || !newAccessRequests[userId][resourceId]) {
+                            newAccessRequests[userId] = newAccessRequests[userId] || {[userId]: {}};
+                            newAccessRequests[userId][resourceId] = true;
+
+                            promptUserForCertificate(request)
+                          }
+                      });
+                    }
+                  });
+                }
 
               // To detect newly deleted records
                 const loadImages = imageObjs || {};
@@ -208,6 +273,54 @@
               $('#modal').modal('show');
             }
             window.showMessage = showMessage; // For debugging
+
+            function promptUserForCertificate(request) {
+              const modal$ = $('#modalPrompt');
+              modal$.modal('show');
+
+              // Prompt user for validity time
+              const validityString = `Requester <b>${request.userName}</b> is requesting access to <b><i>${request.resourceName}</i></b>. <br>To allow access, a resource access certificate fo this requester and resource has be to submitted to CA.
+                                                          <br>To allow access, please enter the the validity of certificate below:`;
+              
+              modal$.find('#validForInputId').off('input');
+              modal$.find('#validForInputId').on('input', (event) => {
+                $('#promptModalSecondsInterpret').text(moment.duration(+event.target.value, "seconds").format("h[hrs] M[min] s[s]"));
+              });
+
+              modal$.find('#modalPromptMessage').html(validityString);
+              modal$.find('#modalPromptGenerateBtn').off('click')
+              modal$.find('#modalPromptGenerateBtn').on('click', (event) => {
+                const validAfterSeconds = modal$.find('#validAfterInputId').first().val(),
+                validForSeconds = modal$.find('#validForInputId').first().val()
+
+                if(!validAfterSeconds || isNaN(+validAfterSeconds) || !validForSeconds || isNaN(+validForSeconds)) {
+                  alert('Incorrent input.')
+                  return false;
+                } else {
+                  const reqData = {
+                    validAfter: +validAfterSeconds,
+                    validFor: +validForSeconds,
+                    userId: request.userId,
+                    resourceId: request.resourceId,
+                    userName: request.userName,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').first().val()
+                  }
+                  modal$.find('#promptModalLoader').show();
+                  fireMessage(GATEWAY_MESSAGES_KEYS.RESOURCE_CERTIFICATE_ASK);
+                  $.post('/owner/resource-access-request/', JSON.stringify(reqData), (e) => {
+                    console.log('resource-access-request sent', e);
+                    modal$.find('#promptModalLoader').hide();
+                    if(e.success) {
+                      modal$.modal('hide');
+                      fireMessage(GATEWAY_MESSAGES_KEYS.RESOURCE_CERTIFICATE_CREATED);
+                    } else {
+                      alert("Couldn't generate certificate. " + e.message);
+                      fireMessage(GATEWAY_MESSAGES_KEYS.RESOURCE_CERTIFICATE_FAILED);
+                    }
+                  });
+                }
+              });
+            }
         })(jQuery);
       }
     </script>

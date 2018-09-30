@@ -1,17 +1,10 @@
-import sys
 import time
-import pyglet
-from pyglet.gl import *
 
-from .node import Node
 from .packets import *
-from cefpython3 import cefpython as cef
 
 import threading
-import asyncio
-import firebase_admin
-from firebase_admin import credentials, db
 
+from servers.CA.cloud import cloud
 
 winProps = {
     'title': "Smart Data - Access Control",
@@ -37,6 +30,7 @@ centerNode = Node('center.png', winProps['imageSize'], winProps['xCenter'], winP
 gatewayNode = Node('gateway.png', winProps['imageSize'], winProps['xCenter'] - winProps['imageSize'] / 2, 2 * winProps['padding'] + winProps['imageSize'], "Gateway")
 authorizationServerNode = Node('authorization-server.png', winProps['imageSize'], winProps['xCenter'] - (winProps['imageSize'] * 2.5), winProps['padding'], "Authorization Server")
 userAccessRulesNode = Node('access-rule-component.png', winProps['imageSize'], winProps['xCenter'] + (winProps['imageSize'] * 1.5), winProps['padding'], "User Access Rule Component")
+caNode = Node('ca.png', winProps['imageSize'], winProps['width'] - winProps['padding'] - winProps['imageSize'], winProps['padding'], "CA")
 
 # Initializing connecting lines
 connecting_lines_batch = pyglet.graphics.Batch()
@@ -47,20 +41,16 @@ connecting_lines_batch.add(2, pyglet.gl.GL_LINES, None, ('v2f', (userAccessRules
 # Status Label
 statusLabel = pyglet.text.Label("", font_name='Aria', font_size=12, bold=True, x = winProps['xCenter'], y = winProps['yCenter'], anchor_x='center',  anchor_y='center', multiline=True, width=winProps['width'] / 4, align='center')
 
-# Firebase initilization
-cred = credentials.Certificate("firebase-adminsdk.json")
-firebase_app = firebase_admin.initialize_app(cred, {'databaseURL': 'https://smart-data-protocol.firebaseio.com'})
-firebase_logs = db.reference('notifications', firebase_app)
 firebase_messages_cache = list()
 
 # Start thread for Firebase listening
 def update_messages():
     while True:
-        notifications = firebase_logs.get()
+        notifications = cloud.firebase_logs.get()
 
         if(isinstance(notifications, list)):
             if(len(notifications)):
-                firebase_logs.delete()
+                cloud.firebase_logs.delete()
 
             for notification in notifications:
                 time.sleep(0.5)
@@ -104,6 +94,9 @@ def on_draw():
 
     # Drawing user access rules component
     userAccessRulesNode.draw()
+
+    # Drawing certificate authority
+    caNode.draw()
 
     # Drawing status label
     statusLabel.draw()

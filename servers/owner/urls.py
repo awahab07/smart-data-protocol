@@ -6,6 +6,7 @@ urlpatterns = [
     # ex: /polls/
     path('', views.index, name='index'),
     path('start', views.start, name='start'),
+    path('resource-access-request/', views.request_resource_access, name='request_resource_access')
     # # ex: /polls/5/
     # path('<int:question_id>/', views.detail, name='detail'),
     # # ex: /polls/5/results/

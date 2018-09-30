@@ -20,7 +20,12 @@ var GATEWAY_MESSAGES = {
     OWNER_AUTH_REQUEST: "Owner authenticating ...",
     OWNER_AUTHENTICATED: "Owner Authenticated.",
     OWNER_FILE_UPLOAD: "Owner Uploaded File",
-    OWNER_NOTIFIED: "Owner Notified"
+    OWNER_NOTIFIED: "Owner Notified",
+
+    RESOURCE_CERTIFICATE_ASK: "Requesting Resource Certificate ...",
+    RESOURCE_CERTIFICATE_CREATED: "Certificate Created",
+    RESOURCE_CERTIFICATE_FAILED: "Certificate Creation - FAILED",
+    RESOURCE_CERTIFICATE_GENERATED: "Resource Certificate Generation - Successful"
 }
 
 var GATEWAY_MESSAGES_KEYS = {};

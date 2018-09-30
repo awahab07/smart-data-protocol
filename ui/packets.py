@@ -20,7 +20,9 @@ icons = {
     'folderAccessGranted': 'folder-access-granted.ico',
     'folderAccessDenied': 'folder-access-denied.ico',
     'folderUpload': 'folder-upload.ico',
-    'notification': 'notification.png'
+    'notification': 'notification.png',
+    'certGenerated': 'cert-generated.png',
+    'askForCert': 'ask-for-cert.png'
 }
 
 smartDataOwnerAuthRequest = Packet([icons['authRequest'], icons['userCertificate']])
@@ -46,7 +48,12 @@ protocolPackets = {
     'OWNER_AUTH_REQUEST': {'packet': Packet([icons['authRequest'], icons['userCertificate']]), 'from': 'smartDataOwnerNode', 'to': 'cloudNode'},
     'OWNER_AUTHENTICATED': {'packet': Packet([icons['userAuthToken'], icons['userCertificate']]), 'from': 'cloudNode', 'to': 'smartDataOwnerNode'},
     'OWNER_FILE_UPLOAD': {'packet': Packet([icons['folderUpload']]), 'from': 'smartDataOwnerNode', 'to': 'cloudNode'},
-    'OWNER_NOTIFIED': {'packet': Packet([icons['notification']]), 'from': 'gatewayNode', 'to': 'smartDataOwnerNode'}
+    'OWNER_NOTIFIED': {'packet': Packet([icons['notification']]), 'from': 'gatewayNode', 'to': 'smartDataOwnerNode'},
+
+    'RESOURCE_CERTIFICATE_ASK': {'packet': Packet([icons['askForCert']]), 'from': 'smartDataOwnerNode', 'to': 'caNode'},
+    'RESOURCE_CERTIFICATE_CREATED': {'packet': Packet([icons['tickMark']]), 'from': 'caNode', 'to': 'userAccessRulesNode'},
+    'RESOURCE_CERTIFICATE_FAILED': {'packet': Packet([icons['accessDenied']]), 'from': 'caNode', 'to': 'centerNode'},
+    'RESOURCE_CERTIFICATE_GENERATED': {'packet': Packet([icons['certGenerated']]), 'from': 'caNode', 'to': 'requesterNode'}
 }
 
 def drawPackets():
